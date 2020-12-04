@@ -10,10 +10,26 @@ Load data
 ```{r}
 setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
 target_1  = readRDS(file = "a.out_target.rds")
-impute_dat_loop = target_1$imputations
-impute_dat_loop[[1]]
+target_1 = target_1$imputations
+target_1[[1]]
+
+
+setwd("P:/Evaluation/TN Lives Count_Target2/Study 5_RELATE Enhanced Follow-up & Tech/3_Data/FINAL Relate Databases")
+target_2 = readRDS("imp_mice_dat_complete.rds")
+target_2[[1]]
+
 
 ```
+Target 1 data cleaning 
+Drop treatment three and ID
+```{r}
+test_dat = target_2[[1]] %>%
+
+
+```
+
+
+
 Take the imputed data sets from both groups (Targets)
 Target 1
 Subset out treatment three
