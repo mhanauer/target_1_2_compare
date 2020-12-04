@@ -23,8 +23,10 @@ target_2[[1]]
 Target 1 data cleaning 
 Drop treatment three and ID
 ```{r}
-test_dat = target_2[[1]] %>%
-
+test_dat = data.frame(target_1[[1]]) %>%
+  filter(treatment != 3) %>%
+  select(-c(ID))
+test_dat
 
 ```
 
