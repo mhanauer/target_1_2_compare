@@ -1,0 +1,27 @@
+---
+title: "Test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Load data
+```{r}
+setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
+target_1  = readRDS(file = "a.out_target.rds")
+impute_dat_loop = target_1$imputations
+impute_dat_loop[[1]]
+
+```
+Take the imputed data sets from both groups (Targets)
+Target 1
+Subset out treatment three
+Target 2 
+Make demographics match 
+Both
+Subset out outcomes that do not match up
+Then stack them and give them an indicator as to which target
+Then conduct IPW 
+Then conduct run between analyses with IPW as weights
+
