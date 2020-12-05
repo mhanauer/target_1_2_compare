@@ -15,35 +15,80 @@ target_1[[1]]
 
 
 setwd("P:/Evaluation/TN Lives Count_Target2/Study 5_RELATE Enhanced Follow-up & Tech/3_Data/FINAL Relate Databases")
-target_2 = readRDS("imp_mice_dat_complete.rds")
-target_2[[1]]
+target_2 = read.csv("target_2_clean.csv", header = TRUE)
+target_2
 
 
 ```
 Target 1 data cleaning 
 Drop treatment three and ID
+Create target variable where target 1 is 1 and target 2 is zero
+Change names of outcomes
+INQ_PB_b_mean = INQ_1
+INQ_TB_b_mean = INQ_2
+RAS_GSO_b_mean = RAS_3
+RAS_PCH_b_mean = RAS_1
+RAS_NDS_b_mean = RAS_5
+RAS_WAH_b_mean = RAS_2
+SD_SIS_b_mean = SIS_1
 ```{r}
 target_1_clean = list()
 for(i in 1:5){
-
 target_1_clean[[i]] = data.frame(target_1[[i]]) %>%
+  mutate(target = rep(1, dim(target_1[[1]])[1])) %>%
   filter(treatment != 3) %>%
-  select(-c(ID))
+  select(-c(ID, single, SSMI_b_average, SSMI_d_average)) %>%
+  rename(RAS_PCH_b_mean = RAS_b_1_average, RAS_PCH_d_mean = RAS_d_1_average, RAS_WAH_b_mean = RAS_b_2_average, RAS_WAH_d_mean = RAS_d_2_average, RAS_GSO_b_mean = RAS_b_3_average, RAS_GSO_d_mean = RAS_d_3_average, RAS_NDS_b_mean = RAS_b_5_average, RAS_NDS_d_mean = RAS_d_5_average, INQ_PB_b_mean = INQ_b_1_average, INQ_PB_d_mean = INQ_d_1_average, INQ_TB_b_mean = INQ_b_2_average, INQ_TB_d_mean = INQ_d_2_average, SD_SIS_b_mean = SIS_b_1_average, SD_SIS_d_mean = SIS_d_1_average) %>%
+  relocate(c(INQ_PB_b_mean, INQ_TB_b_mean, RAS_GSO_b_mean, RAS_PCH_b_mean, RAS_NDS_b_mean, RAS_WAH_b_mean, SD_SIS_b_mean, INQ_PB_d_mean, INQ_TB_d_mean, RAS_GSO_d_mean, RAS_PCH_d_mean, RAS_NDS_d_mean, RAS_WAH_d_mean, SD_SIS_d_mean), .after = employed) %>%
+  mutate(treatment =  as.numeric(treatment))
 }
 target_1_clean[[1]]
+target_1_clean
+
+```
+Target 2 
+Make it match up with target 1
+Then create a list with five versions of the data set
+Remove all missing demographics
+```{r}
+target_2_clean = target_2 %>%
+   mutate(target = rep(0, dim(target_2)[1])) %>%
+  rename(treatment = ProgramPackage, age = Age, female = Gender, sexual_minority = Orientation, non_white = IDWhiteEuropean, high_school_greater = Education, employed= Employment) %>%
+  select(-c(IDAfricanAmerican, ID, PTSDScreen, CAGE_AScreen, CAGE_DScreen, ACCS_b_mean, SEASA_1_b_mean, SEASA_2_b_mean, PTSD_b_mean, PHQ_b_mean, CAGE_b_mean, Precomp_URICA_b, Precomp_URICA_d, Contemp_URICA_b_sum, Contemp_URICA_d_sum, Action_URICA_b_sum, Action_URICA_d_sum, Maintain_URICA_b_sum, Maintain_URICA_d_sum, WAI_mean,CSQ8_mean, SEASA_1_d_mean, SEASA_2_d_mean, RPP_SIS_b_mean, RPP_SIS_d_mean)) %>%
+  mutate(female = case_when(
+    female == "Female" ~ 1, 
+    TRUE ~ 0)) %>%
+  mutate( sexual_minority = case_when( 
+    sexual_minority != "Heterosexual" ~ 1,
+    TRUE ~ 0)) %>%
+  mutate(non_white = case_when(
+    non_white == 0 ~ 1,
+    TRUE ~ 0)) %>%
+  mutate(high_school_greater = case_when(
+    high_school_greater == "11th grade or less" ~ 0,
+    TRUE ~ 1)) %>%
+  mutate(employed = case_when(
+    employed == "Part-time employed" ~ 1,
+    employed == "Full time employed" ~ 1,  
+    TRUE ~ 0)) %>%
+  relocate(non_white, .before = sexual_minority)
+  
+target_2_clean = list(target_2_clean, target_2_clean,target_2_clean, target_2_clean, target_2_clean)
+target_2_clean
+```
+Rbind the data sets
+Create standardized differences scores
+```{r}
+target_1_2_clean = list()
+for(i in 1:5){
+ target_1_2_clean[[i]] = bind_rows(target_1_clean[[i]] ,target_2_clean[[i]])
+}
+
 
 ```
 
 
 
-Take the imputed data sets from both groups (Targets)
-Target 1
-Subset out treatment three
-Target 2 
-Make demographics match 
-Both
-Subset out outcomes that do not match up
-Then stack them and give them an indicator as to which target
 Then conduct IPW 
 Then conduct run between analyses with IPW as weights
 
