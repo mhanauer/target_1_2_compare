@@ -22,7 +22,7 @@ target_2
 ```
 Target 1 data cleaning 
 Drop treatment three and ID
-Create target variable where target 1 is 1 and target 2 is zero
+Create target variable where target 1 is 0 and target 2 is 1
 Change names of outcomes
 INQ_PB_b_mean = INQ_1
 INQ_TB_b_mean = INQ_2
@@ -35,7 +35,7 @@ SD_SIS_b_mean = SIS_1
 target_1_clean = list()
 for(i in 1:5){
 target_1_clean[[i]] = data.frame(target_1[[i]]) %>%
-  mutate(target = rep(1, dim(target_1[[1]])[1])) %>%
+  mutate(target = rep(0, dim(target_1[[1]])[1])) %>%
   filter(treatment != 3) %>%
   select(-c(ID, single, SSMI_b_average, SSMI_d_average)) %>%
   rename(RAS_PCH_b_mean = RAS_b_1_average, RAS_PCH_d_mean = RAS_d_1_average, RAS_WAH_b_mean = RAS_b_2_average, RAS_WAH_d_mean = RAS_d_2_average, RAS_GSO_b_mean = RAS_b_3_average, RAS_GSO_d_mean = RAS_d_3_average, RAS_NDS_b_mean = RAS_b_5_average, RAS_NDS_d_mean = RAS_d_5_average, INQ_PB_b_mean = INQ_b_1_average, INQ_PB_d_mean = INQ_d_1_average, INQ_TB_b_mean = INQ_b_2_average, INQ_TB_d_mean = INQ_d_2_average, SD_SIS_b_mean = SIS_b_1_average, SD_SIS_d_mean = SIS_d_1_average) %>%
@@ -52,8 +52,8 @@ Then create a list with five versions of the data set
 Remove all missing demographics
 ```{r}
 target_2_clean = target_2 %>%
-   mutate(target = rep(0, dim(target_2)[1])) %>%
-  rename(treatment = ProgramPackage, age = Age, female = Gender, sexual_minority = Orientation, non_white = IDWhiteEuropean, high_school_greater = Education, employed= Employment) %>%
+   mutate(target = rep(1, dim(target_2)[1])) %>%
+  rename(treatment = target, age = Age, female = Gender, sexual_minority = Orientation, non_white = IDWhiteEuropean, high_school_greater = Education, employed= Employment) %>%
   select(-c(IDAfricanAmerican, ID, PTSDScreen, CAGE_AScreen, CAGE_DScreen, ACCS_b_mean, SEASA_1_b_mean, SEASA_2_b_mean, PTSD_b_mean, PHQ_b_mean, CAGE_b_mean, Precomp_URICA_b, Precomp_URICA_d, Contemp_URICA_b_sum, Contemp_URICA_d_sum, Action_URICA_b_sum, Action_URICA_d_sum, Maintain_URICA_b_sum, Maintain_URICA_d_sum, WAI_mean,CSQ8_mean, SEASA_1_d_mean, SEASA_2_d_mean, RPP_SIS_b_mean, RPP_SIS_d_mean)) %>%
   mutate(female = case_when(
     female == "Female" ~ 1, 
@@ -85,8 +85,170 @@ for(i in 1:5){
 }
 
 
+diff_out = list()
+dif_scaled_out = list()
+
+
+for(i in 1:5){
+  dif_scaled_out[[i]] =  target_1_2_clean[[i]][c("INQ_PB_d_mean", "INQ_TB_d_mean", "RAS_GSO_d_mean", "RAS_PCH_d_mean", "RAS_NDS_d_mean","RAS_WAH_d_mean", "SD_SIS_d_mean")] - target_1_2_clean[[i]][c("INQ_PB_b_mean", "INQ_TB_b_mean", "RAS_GSO_b_mean", "RAS_PCH_b_mean", "RAS_NDS_b_mean","RAS_WAH_b_mean", "SD_SIS_b_mean")]
+colnames(dif_scaled_out[[i]]) = c("INQ_PB_diff_z", "INQ_TB_diff_z", "RAS_GSO_diff_z", "RAS_PCH_diff_z", "RAS_NDS_diff_z","RAS_WAH_diff_z", "SD_SIS_diff_z")
+dif_scaled_out[[i]] = data.frame(scale(dif_scaled_out[[i]]))
+target_1_2_clean[[i]] =cbind(target_1_2_clean[[i]], dif_scaled_out[[i]])
+}
+
+target_1_2_clean[[1]] %>%
+  dplyr::select(INQ_PB_b_mean, INQ_PB_d_mean, INQ_PB_diff_z)
+
 ```
 
+IPW and then between results
+```{r}
+INQ_PB_diff = list()
+INQ_PB_diff_coef = list()
+INQ_PB_diff_ses = list()
+
+INQ_TB_diff = list()
+INQ_TB_diff_coef = list()
+INQ_TB_diff_ses = list()
+
+RAS_GSO_diff = list()
+RAS_GSO_diff_coef = list()
+RAS_GSO_diff_ses = list()
+
+RAS_PCH_diff = list()
+RAS_PCH_diff_coef = list()
+RAS_PCH_diff_ses = list()
+
+RAS_NDS_diff = list()
+RAS_NDS_diff_coef = list()
+RAS_NDS_diff_ses = list()
+
+RAS_WAH_diff = list() 
+RAS_WAH_diff_coef = list()
+RAS_WAH_diff_ses = list()
+
+SD_SIS_diff = list() 
+SD_SIS_diff_coef = list()
+SD_SIS_diff_ses = list()
+
+INQ_PB_diff = list()
+INQ_PB_diff_coef = list()
+INQ_PB_diff_ses = list()
+
+INQ_TB_diff = list()
+INQ_TB_diff_coef = list()
+INQ_TB_diff_ses = list()
+
+RAS_GSO_diff = list()
+RAS_GSO_diff_coef = list()
+RAS_GSO_diff_ses = list()
+
+RAS_PCH_diff = list()
+RAS_PCH_diff_coef = list()
+RAS_PCH_diff_ses = list()
+
+##### Develop IPW weights
+#### Change Program Package to binary
+#### Package 2 is 1 and Package 1 is 0
+### Use new dat set because you are overwriting binary variables
+test_dat =  target_1_2_clean
+target_1_2_clean[[1]]
+ipw_weights =list()
+predict_treat_prob = list()
+ipw_model = list()
+for(i in 1:5){
+  #factor(treatment) + age + female + non_white + sexual_minority + high_school_greater + employed
+
+  ipw_model[[i]] = glm(target ~ factor(treatment) + age + female + non_white + sexual_minority + high_school_greater + employed, data = test_dat[[i]], family = "binomial")
+  predict_treat_prob[[i]] = predict(ipw_model[[i]], type = "response")
+  ipw_weights[[i]] = 1/predict_treat_prob[[i]]
+}
+range_out = list()
+for(i in 1:5){
+  range_out[[i]] =  range(scale(ipw_weights[[i]]))
+}
+range_out
+
+
+for(i in 1:5){
+  INQ_PB_diff[[i]] = summary(lm(INQ_PB_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  INQ_PB_diff[[i]] = INQ_PB_diff[[i]]$coefficients
+  INQ_PB_diff_coef[[i]] = INQ_PB_diff[[i]][2,1]
+  INQ_PB_diff_ses[[i]] =  INQ_PB_diff[[i]][2,2]
+  
+  
+  INQ_TB_diff[[i]] = summary(lm(INQ_TB_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  INQ_TB_diff[[i]] = INQ_TB_diff[[i]]$coefficients
+  INQ_TB_diff_coef[[i]] = INQ_TB_diff[[i]][2,1]
+  INQ_TB_diff_ses[[i]] = INQ_TB_diff[[i]][2,2]
+  
+  
+  RAS_GSO_diff[[i]] = summary(lm(RAS_GSO_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  RAS_GSO_diff[[i]] = RAS_GSO_diff[[i]]$coefficients
+  RAS_GSO_diff_coef[[i]] = RAS_GSO_diff[[i]][2,1]
+  RAS_GSO_diff_ses[[i]] = RAS_GSO_diff[[i]][2,2]
+  
+  RAS_PCH_diff[[i]] = summary(lm(RAS_PCH_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  RAS_PCH_diff[[i]] = RAS_PCH_diff[[i]]$coefficients
+  RAS_PCH_diff_coef[[i]] = RAS_PCH_diff[[i]][2,1]
+  RAS_PCH_diff_ses[[i]] = RAS_PCH_diff[[i]][2,2]
+  
+  RAS_NDS_diff[[i]] = summary(lm(RAS_NDS_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  RAS_NDS_diff[[i]] = RAS_NDS_diff[[i]]$coefficients
+  RAS_NDS_diff_coef[[i]] = RAS_NDS_diff[[i]][2,1]
+  RAS_NDS_diff_ses[[i]] = RAS_NDS_diff[[i]][2,2]
+  
+  
+  RAS_WAH_diff[[i]] = summary(lm(RAS_WAH_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  RAS_WAH_diff[[i]] = RAS_WAH_diff[[i]]$coefficients
+  RAS_WAH_diff_coef[[i]] = RAS_WAH_diff[[i]][2,1]
+  RAS_WAH_diff_ses[[i]] = RAS_WAH_diff[[i]][2,2]
+  
+  SD_SIS_diff[[i]] = summary(lm(SD_SIS_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  SD_SIS_diff[[i]] = SD_SIS_diff[[i]]$coefficients
+  SD_SIS_diff_coef[[i]] = SD_SIS_diff[[i]][2,1]
+  SD_SIS_diff_ses[[i]] = SD_SIS_diff[[i]][2,2]
+  
+}
+
+between_coef_list = list(INQ_PB_diff_coef, INQ_TB_diff_coef,  RAS_GSO_diff_coef,  RAS_PCH_diff_coef, RAS_NDS_diff_coef,  RAS_WAH_diff_coef,  SD_SIS_diff_coef)
+
+between_coef_list = between_coef_list %>%
+  unlist(.) %>%
+  matrix(., ncol = 7)
+
+#INQ_PB_diff_coef
+
+between_ses_list = list(INQ_PB_diff_ses, INQ_TB_diff_ses,  RAS_GSO_diff_ses,  RAS_PCH_diff_ses, RAS_NDS_diff_ses,  RAS_WAH_diff_ses,  SD_SIS_diff_ses)
+between_ses_list = between_ses_list %>%
+  unlist(.) %>%
+  matrix(., ncol = 7)
+between_ses_list
+
+between_coefs_ses = mi.meld(between_coef_list, between_ses_list)
+
+par= t(between_coefs_ses$q.mi)
+par = data.frame(par = par)
+ses = t(between_coefs_ses$se.mi)
+ses = data.frame(ses = ses)
+combine_par_ses = data.frame(par, ses)
+
+### Create critical t and df outside only need one
+df = dim(target_1_2_clean[[1]])[1]-2
+critical_t = abs(qt(0.05/2, df))
+
+between_results = combine_par_ses %>%
+  mutate(t_stat = par / ses) %>%
+  mutate(p_value = 2*pt(-abs(t_stat), df = df)) %>%
+  mutate(upper = par + (critical_t*ses)) %>%
+  mutate(lower = par - (critical_t*ses)) %>%
+  round(., 3) %>%
+  mutate(outcomes = c("INQ_PB_diff_z", "INQ_TB_diff_z", "RAS_GSO_diff_z", "RAS_PCH_diff_z", "RAS_NDS_diff_z","RAS_WAH_diff_z", "SD_SIS_diff_z")) %>%
+  relocate(outcomes)
+
+between_results
+write.csv(between_results, "between_results_target_1_2.csv", row.names = FALSE)
+```
 
 
 Then conduct IPW 
