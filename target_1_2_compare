@@ -42,7 +42,7 @@ target_1_clean[[i]] = data.frame(target_1[[i]]) %>%
   relocate(c(INQ_PB_b_mean, INQ_TB_b_mean, RAS_GSO_b_mean, RAS_PCH_b_mean, RAS_NDS_b_mean, RAS_WAH_b_mean, SD_SIS_b_mean, INQ_PB_d_mean, INQ_TB_d_mean, RAS_GSO_d_mean, RAS_PCH_d_mean, RAS_NDS_d_mean, RAS_WAH_d_mean, SD_SIS_d_mean), .after = employed) %>%
   mutate(treatment =  as.numeric(treatment))
 }
-target_1_clean[[1]]
+miss_var_summary(target_1_clean[[1]])
 target_1_clean
 
 ```
@@ -53,7 +53,7 @@ Remove all missing demographics
 ```{r}
 target_2_clean = target_2 %>%
    mutate(target = rep(1, dim(target_2)[1])) %>%
-  rename(treatment = target, age = Age, female = Gender, sexual_minority = Orientation, non_white = IDWhiteEuropean, high_school_greater = Education, employed= Employment) %>%
+  rename(treatment = ProgramPackage, age = Age, female = Gender, sexual_minority = Orientation, non_white = IDWhiteEuropean, high_school_greater = Education, employed= Employment) %>%
   select(-c(IDAfricanAmerican, ID, PTSDScreen, CAGE_AScreen, CAGE_DScreen, ACCS_b_mean, SEASA_1_b_mean, SEASA_2_b_mean, PTSD_b_mean, PHQ_b_mean, CAGE_b_mean, Precomp_URICA_b, Precomp_URICA_d, Contemp_URICA_b_sum, Contemp_URICA_d_sum, Action_URICA_b_sum, Action_URICA_d_sum, Maintain_URICA_b_sum, Maintain_URICA_d_sum, WAI_mean,CSQ8_mean, SEASA_1_d_mean, SEASA_2_d_mean, RPP_SIS_b_mean, RPP_SIS_d_mean)) %>%
   mutate(female = case_when(
     female == "Female" ~ 1, 
@@ -97,9 +97,18 @@ target_1_2_clean[[i]] =cbind(target_1_2_clean[[i]], dif_scaled_out[[i]])
 }
 
 target_1_2_clean[[1]] %>%
-  dplyr::select(INQ_PB_b_mean, INQ_PB_d_mean, INQ_PB_diff_z)
+  dplyr::select(INQ_PB_b_mean, INQ_PB_d_mean, INQ_PB_diff_z, target)
+
+
 
 ```
+Some descriptives
+```{r}
+describe.factor(target_1_2_clean[[1]]$target)
+describe.factor(target_1_2_clean[[1]]$treatment)
+dim(target_1_2_clean[[1]])[1]
+```
+
 
 IPW and then between results
 ```{r}
@@ -251,6 +260,4 @@ write.csv(between_results, "between_results_target_1_2.csv", row.names = FALSE)
 ```
 
 
-Then conduct IPW 
-Then conduct run between analyses with IPW as weights
 
