@@ -21,7 +21,7 @@ target_2
 
 ```
 Target 1 data cleaning 
-Drop treatment three and ID
+Drop ID and outcomes and outcomes not in target 2
 Create target variable where target 1 is 0 and target 2 is 1
 Change names of outcomes
 INQ_PB_b_mean = INQ_1
@@ -32,11 +32,12 @@ RAS_NDS_b_mean = RAS_5
 RAS_WAH_b_mean = RAS_2
 SD_SIS_b_mean = SIS_1
 ```{r}
+library(dplyr)
+library(naniar)
 target_1_clean = list()
 for(i in 1:5){
 target_1_clean[[i]] = data.frame(target_1[[i]]) %>%
   mutate(target = rep(0, dim(target_1[[1]])[1])) %>%
-  filter(treatment != 3) %>%
   select(-c(ID, single, SSMI_b_average, SSMI_d_average)) %>%
   rename(RAS_PCH_b_mean = RAS_b_1_average, RAS_PCH_d_mean = RAS_d_1_average, RAS_WAH_b_mean = RAS_b_2_average, RAS_WAH_d_mean = RAS_d_2_average, RAS_GSO_b_mean = RAS_b_3_average, RAS_GSO_d_mean = RAS_d_3_average, RAS_NDS_b_mean = RAS_b_5_average, RAS_NDS_d_mean = RAS_d_5_average, INQ_PB_b_mean = INQ_b_1_average, INQ_PB_d_mean = INQ_d_1_average, INQ_TB_b_mean = INQ_b_2_average, INQ_TB_d_mean = INQ_d_2_average, SD_SIS_b_mean = SIS_b_1_average, SD_SIS_d_mean = SIS_d_1_average) %>%
   relocate(c(INQ_PB_b_mean, INQ_TB_b_mean, RAS_GSO_b_mean, RAS_PCH_b_mean, RAS_NDS_b_mean, RAS_WAH_b_mean, SD_SIS_b_mean, INQ_PB_d_mean, INQ_TB_d_mean, RAS_GSO_d_mean, RAS_PCH_d_mean, RAS_NDS_d_mean, RAS_WAH_d_mean, SD_SIS_d_mean), .after = employed) %>%
@@ -74,8 +75,10 @@ target_2_clean = target_2 %>%
   relocate(non_white, .before = sexual_minority)
   
 target_2_clean = list(target_2_clean, target_2_clean,target_2_clean, target_2_clean, target_2_clean)
-target_2_clean
+target_2_clean[[1]]
 ```
+
+
 Rbind the data sets
 Create standardized differences scores
 ```{r}
@@ -97,13 +100,14 @@ target_1_2_clean[[i]] =cbind(target_1_2_clean[[i]], dif_scaled_out[[i]])
 }
 
 target_1_2_clean[[1]] %>%
-  dplyr::select(INQ_PB_b_mean, INQ_PB_d_mean, INQ_PB_diff_z, target)
+  dplyr::select(INQ_PB_d_mean, INQ_PB_b_mean, INQ_PB_diff_z, target)
 
 
 
 ```
 Some descriptives
 ```{r}
+library(prettyR)
 describe.factor(target_1_2_clean[[1]]$target)
 describe.factor(target_1_2_clean[[1]]$treatment)
 dim(target_1_2_clean[[1]])[1]
@@ -112,6 +116,7 @@ dim(target_1_2_clean[[1]])[1]
 
 IPW and then between results
 ```{r}
+library(Amelia)
 INQ_PB_diff = list()
 INQ_PB_diff_coef = list()
 INQ_PB_diff_ses = list()
@@ -257,6 +262,52 @@ between_results = combine_par_ses %>%
 
 between_results
 write.csv(between_results, "between_results_target_1_2.csv", row.names = FALSE)
+```
+Check the n's
+```{r}
+for(i in 1:5){
+  INQ_PB_diff[[i]] = summary(lm(INQ_PB_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  #INQ_PB_diff[[i]] = INQ_PB_diff[[i]]$coefficients
+  #INQ_PB_diff_coef[[i]] = INQ_PB_diff[[i]][2,1]
+  #INQ_PB_diff_ses[[i]] =  INQ_PB_diff[[i]][2,2]
+  
+  
+  INQ_TB_diff[[i]] = summary(lm(INQ_TB_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  #INQ_TB_diff[[i]] = INQ_TB_diff[[i]]$coefficients
+  #INQ_TB_diff_coef[[i]] = INQ_TB_diff[[i]][2,1]
+  #INQ_TB_diff_ses[[i]] = INQ_TB_diff[[i]][2,2]
+  
+  
+  RAS_GSO_diff[[i]] = summary(lm(RAS_GSO_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  #RAS_GSO_diff[[i]] = RAS_GSO_diff[[i]]$coefficients
+  #RAS_GSO_diff_coef[[i]] = RAS_GSO_diff[[i]][2,1]
+  #RAS_GSO_diff_ses[[i]] = RAS_GSO_diff[[i]][2,2]
+  
+  RAS_PCH_diff[[i]] = summary(lm(RAS_PCH_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  #RAS_PCH_diff[[i]] = RAS_PCH_diff[[i]]$coefficients
+  #RAS_PCH_diff_coef[[i]] = RAS_PCH_diff[[i]][2,1]
+  #RAS_PCH_diff_ses[[i]] = RAS_PCH_diff[[i]][2,2]
+  
+  RAS_NDS_diff[[i]] = summary(lm(RAS_NDS_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  #RAS_NDS_diff[[i]] = RAS_NDS_diff[[i]]$coefficients
+  #RAS_NDS_diff_coef[[i]] = RAS_NDS_diff[[i]][2,1]
+  #RAS_NDS_diff_ses[[i]] = RAS_NDS_diff[[i]][2,2]
+  
+  
+  RAS_WAH_diff[[i]] = summary(lm(RAS_WAH_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  #RAS_WAH_diff[[i]] = RAS_WAH_diff[[i]]$coefficients
+  #RAS_WAH_diff_coef[[i]] = RAS_WAH_diff[[i]][2,1]
+  #RAS_WAH_diff_ses[[i]] = RAS_WAH_diff[[i]][2,2]
+  
+  SD_SIS_diff[[i]] = summary(lm(SD_SIS_diff_z ~ target , data = target_1_2_clean[[i]]), weights = ipw_weights[[i]])
+  #SD_SIS_diff[[i]] = SD_SIS_diff[[i]]$coefficients
+  #SD_SIS_diff_coef[[i]] = SD_SIS_diff[[i]][2,1]
+  #SD_SIS_diff_ses[[i]] = SD_SIS_diff[[i]][2,2]
+  
+}
+### N for analysis
+N = dim(target_1_2_clean[[1]])[1]-114
+N
 ```
 
 
